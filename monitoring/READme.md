@@ -60,3 +60,39 @@
     helm repo update
 
     helm install redis-exporter prometheus-community/prometheus-redis-exporter -f redis-values.yaml
+
+
+# ArgoCD
+
+### Install ArgoCD in the cluster
+ArgoCD runs inside Kubernetes, so you install it like any other app:
+
+    kubectl create namespace argocd
+    kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
+This installs:
+ArgoCD server
+API server
+Controller
+Repo server
+Application controller
+All inside the argocd namespace.
+
+### Access the ArgoCD UI
+    kubectl port-forward svc/argocd-server -n argocd 8080:443
+### Log in to ArgoCD
+    kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath="{.data.password}" | base64 -d; echo
+    // Username: admin
+### Connect your Git repo
+    argocd login localhost:8080 --username admin --password <password> --insecure
+### Create an app (microservice app)
+    argocd app create microservice-app \
+      --repo https://github.com/YOUR_USER/nginx-k8s.git \
+      --path ./manifests \
+      --dest-server https://kubernetes.default.svc \
+      --dest-namespace default
+
+### Sync the app
+    argocd app sync nginx-app
+### Automate Sync
+    argocd app set nginx-app --sync-policy automated
